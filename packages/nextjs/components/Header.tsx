@@ -25,7 +25,6 @@ export const menuLinks: HeaderMenuLink[] = [
     label: "Home",
     href: "/",
   },
-
   {
     label: "Debug Contracts",
     href: "/debug",
@@ -103,8 +102,6 @@ export const Header = () => {
           </ul>
         </details>
         <Link href="/" passHref className="hidden lg:flex items-center gap-2 ml-4 mr-6 shrink-0">
-          {/* <div className="flex relative w-10 h-10"> */}
-          {/* <Image alt="SE2 logo" className="cursor-pointer" fill src="/logo.svg" /> */}
           <div className="size-4">
             <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path
@@ -121,7 +118,6 @@ export const Header = () => {
               ></path>
             </svg>
           </div>
-          {/* </div> */}
           <div className="flex flex-col">
             <span className="font-bold leading-tight">SimpleSwap</span>
           </div>
