@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import type { NextPage } from "next";
 import { useAccount } from "wagmi";
 import { Address } from "~~/components/scaffold-eth";
@@ -42,12 +43,16 @@ const Home: NextPage = () => {
           </div>
           <div className="flex justify-center mt-2">
             <div className="flex flex-1 gap-3 flex-wrap px-4 py-3 max-w-[480px] justify-center">
-              <button className="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-full h-12 px-5 bg-[#adc7ea] text-[#121417] text-base font-bold leading-normal tracking-[0.015em] grow">
-                <span className="truncate">Swap</span>
-              </button>
-              <button className="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-full h-12 px-5 bg-[#2b3036] text-white text-base font-bold leading-normal tracking-[0.015em] grow">
-                <span className="truncate">Pool</span>
-              </button>
+              <Link href={"/swap"} passHref>
+                <button className="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-full h-12 px-5 bg-[#adc7ea] text-[#121417] text-base font-bold leading-normal tracking-[0.015em] grow">
+                  <span className="truncate">Swap</span>
+                </button>
+              </Link>
+              <Link href={"/liquidity"} passHref>
+                <button className="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-full h-12 px-5 bg-[#2b3036] text-white text-base font-bold leading-normal tracking-[0.015em] grow">
+                  <span className="truncate">Liquidity</span>
+                </button>
+              </Link>
             </div>
           </div>
         </div>
