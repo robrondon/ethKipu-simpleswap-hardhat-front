@@ -3,10 +3,10 @@
 import { useState } from "react";
 import Link from "next/link";
 import type { NextPage } from "next";
-import { isAddress, parseEther } from "viem";
+import { formatEther, isAddress, parseEther } from "viem";
 import { useAccount } from "wagmi";
 import { Address } from "~~/components/scaffold-eth";
-import { useScaffoldWriteContract } from "~~/hooks/scaffold-eth";
+import { useDeployedContractInfo, useScaffoldReadContract, useScaffoldWriteContract } from "~~/hooks/scaffold-eth";
 import { notification } from "~~/utils/scaffold-eth";
 
 const PoolPage: NextPage = () => {
@@ -25,10 +25,100 @@ const PoolPage: NextPage = () => {
     contractName: "SimpleSwap",
   });
 
+  // Obtener información del contrato SimpleSwap
+  const { data: simpleSwapContract } = useDeployedContractInfo({
+    contractName: "SimpleSwap",
+  });
+
+  // Hook para aprobar tokens
+  const { writeContractAsync: writeTokenA } = useScaffoldWriteContract({
+    contractName: "TokenA",
+  });
+
+  const { writeContractAsync: writeTokenB } = useScaffoldWriteContract({
+    contractName: "TokenB",
+  });
+
+  // Leer allowance de TokenA
+  const { data: allowanceTokenA, refetch: refetchAllowanceA } = useScaffoldReadContract({
+    contractName: "TokenA",
+    functionName: "allowance",
+    args: [connectedAddress, simpleSwapContract?.address],
+  });
+
+  // Leer allowance de TokenB
+  const { data: allowanceTokenB, refetch: refetchAllowanceB } = useScaffoldReadContract({
+    contractName: "TokenB",
+    functionName: "allowance",
+    args: [connectedAddress, simpleSwapContract?.address],
+  });
+
+  // Leer balance de TokenA
+  const { data: balanceTokenA } = useScaffoldReadContract({
+    contractName: "TokenA",
+    functionName: "balanceOf",
+    args: [connectedAddress],
+  });
+
+  // Leer balance de TokenB
+  const { data: balanceTokenB } = useScaffoldReadContract({
+    contractName: "TokenB",
+    functionName: "balanceOf",
+    args: [connectedAddress],
+  });
+
   // Validar que las direcciones sean válidas
   const isTokenAValid = tokenAAddress && isAddress(tokenAAddress);
   const isTokenBValid = tokenBAddress && isAddress(tokenBAddress);
   const areTokensDifferent = tokenAAddress !== tokenBAddress && tokenAAddress && tokenBAddress;
+
+  // Verificar si necesita aprobación
+  const needsTokenAApproval = amountA && allowanceTokenA && parseEther(amountA) > allowanceTokenA;
+  const needsTokenBApproval = amountB && allowanceTokenB && parseEther(amountB) > allowanceTokenB;
+  const needsApproval = needsTokenAApproval || needsTokenBApproval;
+
+  // Verificar si tiene suficiente balance
+  const hasEnoughBalanceA = amountA && balanceTokenA && parseEther(amountA) <= balanceTokenA;
+  const hasEnoughBalanceB = amountB && balanceTokenB && parseEther(amountB) <= balanceTokenB;
+  const hasEnoughBalance = hasEnoughBalanceA && hasEnoughBalanceB;
+
+  const handleApproveTokens = async () => {
+    if (!connectedAddress || !simpleSwapContract) {
+      notification.error("Please connect wallet and ensure contract is deployed");
+      return;
+    }
+
+    try {
+      const simpleSwapAddress = simpleSwapContract.address;
+
+      // Aprobar TokenA si es necesario
+      if (needsTokenAApproval && amountA) {
+        const amountADesired = parseEther(amountA);
+        await writeTokenA({
+          functionName: "approve",
+          args: [simpleSwapAddress, amountADesired],
+        });
+        notification.success("Token A approved!");
+        refetchAllowanceA();
+      }
+
+      // Aprobar TokenB si es necesario
+      if (needsTokenBApproval && amountB) {
+        const amountBDesired = parseEther(amountB);
+        await writeTokenB({
+          functionName: "approve",
+          args: [simpleSwapAddress, amountBDesired],
+        });
+        notification.success("Token B approved!");
+        refetchAllowanceB();
+      }
+
+      notification.success("All tokens approved successfully!");
+    } catch (error) {
+      console.error("Error approving tokens:", error);
+      notification.error("Failed to approve tokens");
+    }
+  };
 
   const handleAddLiquidity = async () => {
     if (!connectedAddress || !isTokenAValid || !isTokenBValid || !amountA || !amountB) {
@@ -38,6 +128,23 @@ const PoolPage: NextPage = () => {
 
     if (!areTokensDifferent) {
       notification.error("Token A and Token B must be different");
+      return;
+    }
+
+    if (!simpleSwapContract) {
+      notification.error("SimpleSwap contract is not deployed");
+      return;
+    }
+
+    // Verificar si necesita aprobación
+    if (needsApproval) {
+      notification.error("Please approve tokens first");
+      return;
+    }
+
+    // Verificar si tiene suficiente balance
+    if (!hasEnoughBalance) {
+      notification.error("Insufficient token balance");
       return;
     }
 
@@ -89,6 +196,11 @@ const PoolPage: NextPage = () => {
       return;
     }
 
+    if (!simpleSwapContract) {
+      notification.error("SimpleSwap contract is not deployed");
+      return;
+    }
+
     try {
       // Convertir las cantidades a wei
       const liquidity = parseEther(lpTokenAmount);
@@ -119,6 +231,26 @@ const PoolPage: NextPage = () => {
     <div className="flex flex-col items-center justify-center min-h-screen py-8 px-4">
       <div className="bg-base-100 rounded-3xl shadow-lg p-8 w-full max-w-md">
         <h1 className="text-3xl font-bold text-center mb-8">Liquidity Pool</h1>
+
+        {/* Contract Status */}
+        {!simpleSwapContract && (
+          <div className="alert alert-error mb-4">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="stroke-current shrink-0 h-6 w-6"
+              fill="none"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+            <span>SimpleSwap contract is not deployed on this network</span>
+          </div>
+        )}
 
         {/* Tabs */}
         <div className="tabs tabs-boxed mb-6">
@@ -202,6 +334,30 @@ const PoolPage: NextPage = () => {
               />
             </div>
 
+            {/* Token Balances */}
+            {balanceTokenA && (
+              <div className="text-xs text-gray-600 mb-2">Token A Balance: {formatEther(balanceTokenA)}</div>
+            )}
+
+            {balanceTokenB && (
+              <div className="text-xs text-gray-600 mb-2">Token B Balance: {formatEther(balanceTokenB)}</div>
+            )}
+
+            {/* Allowance Information */}
+            {amountA && allowanceTokenA && (
+              <div className={`text-xs mb-2 ${needsTokenAApproval ? "text-error" : "text-success"}`}>
+                Token A Allowance: {formatEther(allowanceTokenA)} / {amountA}
+                {needsTokenAApproval && " ⚠️ Needs approval"}
+              </div>
+            )}
+
+            {amountB && allowanceTokenB && (
+              <div className={`text-xs mb-2 ${needsTokenBApproval ? "text-error" : "text-success"}`}>
+                Token B Allowance: {formatEther(allowanceTokenB)} / {amountB}
+                {needsTokenBApproval && " ⚠️ Needs approval"}
+              </div>
+            )}
+
             {/* Slippage Protection */}
             <div className="mb-6">
               <label className="block text-sm font-medium mb-2">Slippage Protection (Optional)</label>
@@ -229,6 +385,17 @@ const PoolPage: NextPage = () => {
               </div>
             </div>
 
+            {/* Approve Button - Solo mostrar si necesita aprobación */}
+            {needsApproval && (
+              <button
+                onClick={handleApproveTokens}
+                disabled={!connectedAddress || !simpleSwapContract || isMining}
+                className="btn btn-accent w-full mb-2"
+              >
+                Approve Tokens
+              </button>
+            )}
+
             <button
               onClick={handleAddLiquidity}
               disabled={
@@ -238,11 +405,22 @@ const PoolPage: NextPage = () => {
                 !amountA ||
                 !amountB ||
                 !areTokensDifferent ||
+                !simpleSwapContract ||
+                needsApproval ||
+                !hasEnoughBalance ||
                 isMining
               }
               className="btn btn-primary w-full mb-4"
             >
-              {!connectedAddress ? "Connect Wallet" : isMining ? "Adding Liquidity..." : "Add Liquidity"}
+              {!connectedAddress
+                ? "Connect Wallet"
+                : needsApproval
+                  ? "Approve Tokens First"
+                  : !hasEnoughBalance
+                    ? "Insufficient Balance"
+                    : isMining
+                      ? "Adding Liquidity..."
+                      : "Add Liquidity"}
             </button>
           </>
         ) : (
@@ -294,6 +472,7 @@ const PoolPage: NextPage = () => {
                 !isTokenBValid ||
                 !lpTokenAmount ||
                 !areTokensDifferent ||
+                !simpleSwapContract ||
                 isMining
               }
               className="btn btn-secondary w-full mb-4"
@@ -308,6 +487,14 @@ const PoolPage: NextPage = () => {
           <p className="text-sm text-gray-600 mb-2">Connected Address:</p>
           <Address address={connectedAddress} />
         </div>
+
+        {/* SimpleSwap Contract Address */}
+        {simpleSwapContract && (
+          <div className="mb-6 text-center">
+            <p className="text-sm text-gray-600 mb-2">SimpleSwap Contract:</p>
+            <Address address={simpleSwapContract.address} />
+          </div>
+        )}
 
         {/* Back to Home */}
         <div className="text-center">
