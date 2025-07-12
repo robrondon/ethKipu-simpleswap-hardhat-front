@@ -47,6 +47,14 @@ const PoolPage: NextPage = () => {
   const [amountA, setAmountA] = useState("");
   const [amountB, setAmountB] = useState("");
 
+  // Estados adicionales para remove liquidity
+  const [liquidityAmount, setLiquidityAmount] = useState("");
+  const [minAmountA, setMinAmountA] = useState("");
+  const [minAmountB, setMinAmountB] = useState("");
+
+  // Estados para slippage tolerance
+  const [slippageTolerance, setSlippageTolerance] = useState("0.5"); // 0.5%
+
   // Estados para balances y allowances
   const [tokenABalance, setTokenABalance] = useState<string>("0");
   const [tokenBBalance, setTokenBBalance] = useState<string>("0");
@@ -60,6 +68,20 @@ const PoolPage: NextPage = () => {
   const isTokenBValid = isAddress(tokenBAddress);
   const areTokensDifferent =
     tokenAAddress.toLowerCase() !== tokenBAddress.toLowerCase() && tokenAAddress && tokenBAddress;
+
+  // Función para calcular deadline (20 minutos desde ahora)
+  const getDeadline = () => {
+    return BigInt(Math.floor(Date.now() / 1000) + 20 * 60); // 20 minutos
+  };
+
+  // Función para calcular cantidades mínimas con slippage
+  const calculateMinAmount = (amount: string, slippage: string) => {
+    if (!amount || !slippage) return "0";
+    const amountNum = parseFloat(amount);
+    const slippageNum = parseFloat(slippage);
+    const minAmount = amountNum * (1 - slippageNum / 100);
+    return minAmount.toString();
+  };
 
   // Hooks para leer datos de los tokens usando wagmi directamente
   const { data: tokenABalanceData } = useReadContract({
@@ -190,7 +212,12 @@ const PoolPage: NextPage = () => {
     }
 
     try {
-      // USAMOS SCAFFOLD-ETH PARA SIMPLESWAP
+      // Calcular cantidades mínimas con slippage
+      const amountAMin = parseEther(calculateMinAmount(amountA, slippageTolerance));
+      const amountBMin = parseEther(calculateMinAmount(amountB, slippageTolerance));
+      const deadline = getDeadline();
+
+      // ARGS CORREGIDOS PARA ADDLIQUIDITY
       await addLiquidity({
         functionName: "addLiquidity",
         args: [
@@ -205,14 +232,15 @@ const PoolPage: NextPage = () => {
         ],
       });
       notification.success("Liquidity added successfully!");
-    } catch {
+    } catch (error) {
+      console.error("Error adding liquidity:", error);
       notification.error("Failed to add liquidity");
     }
   };
 
   const handleRemoveLiquidity = async () => {
-    if (!connectedAddress || !isTokenAValid || !isTokenBValid || !amountA || !amountB) {
-      notification.error("Please fill all fields with valid token addresses");
+    if (!connectedAddress || !isTokenAValid || !isTokenBValid || !liquidityAmount || !minAmountA || !minAmountB) {
+      notification.error("Please fill all fields with valid token addresses and amounts");
       return;
     }
 
@@ -222,7 +250,9 @@ const PoolPage: NextPage = () => {
     }
 
     try {
-      // USAMOS SCAFFOLD-ETH PARA SIMPLESWAP
+      const deadline = getDeadline();
+
+      // ARGS CORREGIDOS PARA REMOVELIQUIDITY
       await removeLiquidity({
         functionName: "removeLiquidity",
         args: [
@@ -236,7 +266,8 @@ const PoolPage: NextPage = () => {
         ],
       });
       notification.success("Liquidity removed successfully!");
-    } catch {
+    } catch (error) {
+      console.error("Error removing liquidity:", error);
       notification.error("Failed to remove liquidity");
     }
   };
@@ -271,6 +302,23 @@ const PoolPage: NextPage = () => {
 
             {activeTab === "add" ? (
               <div className="w-full mt-6 space-y-4">
+                {/* Slippage Tolerance */}
+                <div className="form-control">
+                  <label className="label">
+                    <span className="label-text">Slippage Tolerance (%)</span>
+                  </label>
+                  <input
+                    type="number"
+                    placeholder="0.5"
+                    className="input input-bordered"
+                    value={slippageTolerance}
+                    onChange={e => setSlippageTolerance(e.target.value)}
+                    step="0.1"
+                    min="0"
+                    max="50"
+                  />
+                </div>
+
                 {/* Token A */}
                 <div className="form-control">
                   <label className="label">
@@ -323,6 +371,11 @@ const PoolPage: NextPage = () => {
                     value={amountA}
                     onChange={e => setAmountA(e.target.value)}
                   />
+                  {amountA && slippageTolerance && (
+                    <div className="mt-1 text-xs text-base-content/50">
+                      Min amount: {calculateMinAmount(amountA, slippageTolerance)}
+                    </div>
+                  )}
                 </div>
 
                 {/* Amount B */}
@@ -337,6 +390,11 @@ const PoolPage: NextPage = () => {
                     value={amountB}
                     onChange={e => setAmountB(e.target.value)}
                   />
+                  {amountB && slippageTolerance && (
+                    <div className="mt-1 text-xs text-base-content/50">
+                      Min amount: {calculateMinAmount(amountB, slippageTolerance)}
+                    </div>
+                  )}
                 </div>
 
                 {/* Approve Buttons */}
@@ -405,27 +463,40 @@ const PoolPage: NextPage = () => {
 
                 <div className="form-control">
                   <label className="label">
-                    <span className="label-text">LP Token Amount</span>
+                    <span className="label-text">LP Token Amount to Remove</span>
                   </label>
                   <input
                     type="number"
                     placeholder="0.0"
                     className="input input-bordered"
-                    value={amountA}
-                    onChange={e => setAmountA(e.target.value)}
+                    value={liquidityAmount}
+                    onChange={e => setLiquidityAmount(e.target.value)}
                   />
                 </div>
 
                 <div className="form-control">
                   <label className="label">
-                    <span className="label-text">Min Token A</span>
+                    <span className="label-text">Minimum Token A Amount</span>
                   </label>
                   <input
                     type="number"
                     placeholder="0.0"
                     className="input input-bordered"
-                    value={amountB}
-                    onChange={e => setAmountB(e.target.value)}
+                    value={minAmountA}
+                    onChange={e => setMinAmountA(e.target.value)}
+                  />
+                </div>
+
+                <div className="form-control">
+                  <label className="label">
+                    <span className="label-text">Minimum Token B Amount</span>
+                  </label>
+                  <input
+                    type="number"
+                    placeholder="0.0"
+                    className="input input-bordered"
+                    value={minAmountB}
+                    onChange={e => setMinAmountB(e.target.value)}
                   />
                 </div>
 
@@ -436,8 +507,9 @@ const PoolPage: NextPage = () => {
                     !connectedAddress ||
                     !isTokenAValid ||
                     !isTokenBValid ||
-                    !amountA ||
-                    !amountB ||
+                    !liquidityAmount ||
+                    !minAmountA ||
+                    !minAmountB ||
                     !areTokensDifferent ||
                     isConfirming
                   }
