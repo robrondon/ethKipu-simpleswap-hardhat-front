@@ -1,13 +1,43 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import type { NextPage } from "next";
 import { formatEther, isAddress, parseEther } from "viem";
-import { useAccount } from "wagmi";
-import { Address } from "~~/components/scaffold-eth";
-import { useDeployedContractInfo, useScaffoldReadContract, useScaffoldWriteContract } from "~~/hooks/scaffold-eth";
+import { useAccount, useReadContract, useWaitForTransactionReceipt, useWriteContract } from "wagmi";
+import { useDeployedContractInfo, useScaffoldWriteContract } from "~~/hooks/scaffold-eth";
 import { notification } from "~~/utils/scaffold-eth";
+
+// ABI básico de ERC20 (solo las funciones que necesitamos)
+const ERC20_ABI = [
+  {
+    inputs: [{ name: "account", type: "address" }],
+    name: "balanceOf",
+    outputs: [{ name: "", type: "uint256" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      { name: "owner", type: "address" },
+      { name: "spender", type: "address" },
+    ],
+    name: "allowance",
+    outputs: [{ name: "", type: "uint256" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      { name: "spender", type: "address" },
+      { name: "amount", type: "uint256" },
+    ],
+    name: "approve",
+    outputs: [{ name: "", type: "bool" }],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+] as const;
 
 const PoolPage: NextPage = () => {
   const { address: connectedAddress } = useAccount();
@@ -16,107 +46,121 @@ const PoolPage: NextPage = () => {
   const [tokenBAddress, setTokenBAddress] = useState("");
   const [amountA, setAmountA] = useState("");
   const [amountB, setAmountB] = useState("");
-  const [lpTokenAmount, setLpTokenAmount] = useState("");
-  const [amountAMin, setAmountAMin] = useState("");
-  const [amountBMin, setAmountBMin] = useState("");
 
-  // Hook para escribir al contrato SimpleSwap
-  const { writeContractAsync: writeSimpleSwap, isMining } = useScaffoldWriteContract({
+  // Estados para balances y allowances
+  const [tokenABalance, setTokenABalance] = useState<string>("0");
+  const [tokenBBalance, setTokenBBalance] = useState<string>("0");
+  const [tokenAAllowance, setTokenAAllowance] = useState<string>("0");
+  const [tokenBAllowance, setTokenBAllowance] = useState<string>("0");
+
+  const simpleSwapInfo = useDeployedContractInfo({ contractName: "SimpleSwap" });
+
+  // Validaciones
+  const isTokenAValid = isAddress(tokenAAddress);
+  const isTokenBValid = isAddress(tokenBAddress);
+  const areTokensDifferent =
+    tokenAAddress.toLowerCase() !== tokenBAddress.toLowerCase() && tokenAAddress && tokenBAddress;
+
+  // Hooks para leer datos de los tokens usando wagmi directamente
+  const { data: tokenABalanceData } = useReadContract({
+    address: isTokenAValid ? tokenAAddress : undefined,
+    abi: ERC20_ABI,
+    functionName: "balanceOf",
+    args: connectedAddress ? [connectedAddress] : undefined,
+  });
+
+  const { data: tokenBBalanceData } = useReadContract({
+    address: isTokenBValid ? tokenBAddress : undefined,
+    abi: ERC20_ABI,
+    functionName: "balanceOf",
+    args: connectedAddress ? [connectedAddress] : undefined,
+  });
+
+  const { data: tokenAAllowanceData } = useReadContract({
+    address: isTokenAValid ? tokenAAddress : undefined,
+    abi: ERC20_ABI,
+    functionName: "allowance",
+    args:
+      connectedAddress && simpleSwapInfo.data?.address ? [connectedAddress, simpleSwapInfo.data.address] : undefined,
+  });
+
+  const { data: tokenBAllowanceData } = useReadContract({
+    address: isTokenBValid ? tokenBAddress : undefined,
+    abi: ERC20_ABI,
+    functionName: "allowance",
+    args:
+      connectedAddress && simpleSwapInfo.data?.address ? [connectedAddress, simpleSwapInfo.data.address] : undefined,
+  });
+
+  // Actualizar estados cuando cambien los datos
+  useEffect(() => {
+    if (tokenABalanceData) {
+      setTokenABalance(formatEther(tokenABalanceData));
+    }
+  }, [tokenABalanceData]);
+
+  useEffect(() => {
+    if (tokenBBalanceData) {
+      setTokenBBalance(formatEther(tokenBBalanceData));
+    }
+  }, [tokenBBalanceData]);
+
+  useEffect(() => {
+    if (tokenAAllowanceData) {
+      setTokenAAllowance(formatEther(tokenAAllowanceData));
+    }
+  }, [tokenAAllowanceData]);
+
+  useEffect(() => {
+    if (tokenBAllowanceData) {
+      setTokenBAllowance(formatEther(tokenBAllowanceData));
+    }
+  }, [tokenBAllowanceData]);
+
+  // Hooks para escribir contratos - USAMOS SCAFFOLD-ETH PARA SIMPLESWAP
+  const { writeContractAsync: addLiquidity } = useScaffoldWriteContract({
     contractName: "SimpleSwap",
   });
 
-  // Obtener información del contrato SimpleSwap
-  const { data: simpleSwapContract } = useDeployedContractInfo({
+  const { writeContractAsync: removeLiquidity } = useScaffoldWriteContract({
     contractName: "SimpleSwap",
   });
 
-  // Hook para aprobar tokens
-  const { writeContractAsync: writeTokenA } = useScaffoldWriteContract({
-    contractName: "TokenA",
-  });
+  // Para los tokens ERC20 usamos wagmi directamente
+  const { writeContract: writeContract, data: hash } = useWriteContract();
+  const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash });
 
-  const { writeContractAsync: writeTokenB } = useScaffoldWriteContract({
-    contractName: "TokenB",
-  });
-
-  // Leer allowance de TokenA
-  const { data: allowanceTokenA, refetch: refetchAllowanceA } = useScaffoldReadContract({
-    contractName: "TokenA",
-    functionName: "allowance",
-    args: [connectedAddress, simpleSwapContract?.address],
-  });
-
-  // Leer allowance de TokenB
-  const { data: allowanceTokenB, refetch: refetchAllowanceB } = useScaffoldReadContract({
-    contractName: "TokenB",
-    functionName: "allowance",
-    args: [connectedAddress, simpleSwapContract?.address],
-  });
-
-  // Leer balance de TokenA
-  const { data: balanceTokenA } = useScaffoldReadContract({
-    contractName: "TokenA",
-    functionName: "balanceOf",
-    args: [connectedAddress],
-  });
-
-  // Leer balance de TokenB
-  const { data: balanceTokenB } = useScaffoldReadContract({
-    contractName: "TokenB",
-    functionName: "balanceOf",
-    args: [connectedAddress],
-  });
-
-  // Validar que las direcciones sean válidas
-  const isTokenAValid = tokenAAddress && isAddress(tokenAAddress);
-  const isTokenBValid = tokenBAddress && isAddress(tokenBAddress);
-  const areTokensDifferent = tokenAAddress !== tokenBAddress && tokenAAddress && tokenBAddress;
-
-  // Verificar si necesita aprobación
-  const needsTokenAApproval = amountA && allowanceTokenA && parseEther(amountA) > allowanceTokenA;
-  const needsTokenBApproval = amountB && allowanceTokenB && parseEther(amountB) > allowanceTokenB;
-  const needsApproval = needsTokenAApproval || needsTokenBApproval;
-
-  // Verificar si tiene suficiente balance
-  const hasEnoughBalanceA = amountA && balanceTokenA && parseEther(amountA) <= balanceTokenA;
-  const hasEnoughBalanceB = amountB && balanceTokenB && parseEther(amountB) <= balanceTokenB;
-  const hasEnoughBalance = hasEnoughBalanceA && hasEnoughBalanceB;
-
-  const handleApproveTokens = async () => {
-    if (!connectedAddress || !simpleSwapContract) {
-      notification.error("Please connect wallet and ensure contract is deployed");
+  const handleApproveTokenA = async () => {
+    if (!amountA || !simpleSwapInfo.data?.address) {
+      notification.error("Please enter amount for Token A first");
       return;
     }
-
     try {
-      const simpleSwapAddress = simpleSwapContract.address;
+      writeContract({
+        address: tokenAAddress,
+        abi: ERC20_ABI,
+        functionName: "approve",
+        args: [simpleSwapInfo.data.address, parseEther(amountA)],
+      });
+    } catch {
+      notification.error("Failed to approve Token A");
+    }
+  };
 
-      // Aprobar TokenA si es necesario
-      if (needsTokenAApproval && amountA) {
-        const amountADesired = parseEther(amountA);
-        await writeTokenA({
-          functionName: "approve",
-          args: [simpleSwapAddress, amountADesired],
-        });
-        notification.success("Token A approved!");
-        refetchAllowanceA();
-      }
-
-      // Aprobar TokenB si es necesario
-      if (needsTokenBApproval && amountB) {
-        const amountBDesired = parseEther(amountB);
-        await writeTokenB({
-          functionName: "approve",
-          args: [simpleSwapAddress, amountBDesired],
-        });
-        notification.success("Token B approved!");
-        refetchAllowanceB();
-      }
-
-      notification.success("All tokens approved successfully!");
-    } catch (error) {
-      console.error("Error approving tokens:", error);
-      notification.error("Failed to approve tokens");
+  const handleApproveTokenB = async () => {
+    if (!amountB || !simpleSwapInfo.data?.address) {
+      notification.error("Please enter amount for Token B first");
+      return;
+    }
+    try {
+      writeContract({
+        address: tokenBAddress,
+        abi: ERC20_ABI,
+        functionName: "approve",
+        args: [simpleSwapInfo.data.address, parseEther(amountB)],
+      });
+    } catch {
+      notification.error("Failed to approve Token B");
     }
   };
 
@@ -131,62 +175,43 @@ const PoolPage: NextPage = () => {
       return;
     }
 
-    if (!simpleSwapContract) {
-      notification.error("SimpleSwap contract is not deployed");
+    // Verificar allowances
+    const amountAWei = parseEther(amountA);
+    const amountBWei = parseEther(amountB);
+
+    if (tokenAAllowanceData && BigInt(tokenAAllowanceData) < amountAWei) {
+      notification.error("Token A allowance insufficient. Please approve first.");
       return;
     }
 
-    // Verificar si necesita aprobación
-    if (needsApproval) {
-      notification.error("Please approve tokens first");
-      return;
-    }
-
-    // Verificar si tiene suficiente balance
-    if (!hasEnoughBalance) {
-      notification.error("Insufficient token balance");
+    if (tokenBAllowanceData && BigInt(tokenBAllowanceData) < amountBWei) {
+      notification.error("Token B allowance insufficient. Please approve first.");
       return;
     }
 
     try {
-      // Convertir las cantidades a wei
-      const amountADesired = parseEther(amountA);
-      const amountBDesired = parseEther(amountB);
-      const amountAMinValue = parseEther(amountAMin || "0");
-      const amountBMinValue = parseEther(amountBMin || "0");
-
-      // Deadline: 20 minutos desde ahora
-      const deadline = BigInt(Math.floor(Date.now() / 1000) + 20 * 60);
-
-      await writeSimpleSwap({
+      // USAMOS SCAFFOLD-ETH PARA SIMPLESWAP
+      await addLiquidity({
         functionName: "addLiquidity",
         args: [
           tokenAAddress,
           tokenBAddress,
-          amountADesired,
-          amountBDesired,
-          amountAMinValue,
-          amountBMinValue,
+          amountAWei,
+          amountBWei,
+          amountAMin,
+          amountBMin,
           connectedAddress,
           deadline,
         ],
       });
-
       notification.success("Liquidity added successfully!");
-
-      // Limpiar formulario
-      setAmountA("");
-      setAmountB("");
-      setAmountAMin("");
-      setAmountBMin("");
-    } catch (error) {
-      console.error("Error adding liquidity:", error);
+    } catch {
       notification.error("Failed to add liquidity");
     }
   };
 
   const handleRemoveLiquidity = async () => {
-    if (!connectedAddress || !isTokenAValid || !isTokenBValid || !lpTokenAmount) {
+    if (!connectedAddress || !isTokenAValid || !isTokenBValid || !amountA || !amountB) {
       notification.error("Please fill all fields with valid token addresses");
       return;
     }
@@ -196,314 +221,241 @@ const PoolPage: NextPage = () => {
       return;
     }
 
-    if (!simpleSwapContract) {
-      notification.error("SimpleSwap contract is not deployed");
-      return;
-    }
-
     try {
-      // Convertir las cantidades a wei
-      const liquidity = parseEther(lpTokenAmount);
-      const amountAMinValue = parseEther(amountAMin || "0");
-      const amountBMinValue = parseEther(amountBMin || "0");
-
-      // Deadline: 20 minutos desde ahora
-      const deadline = BigInt(Math.floor(Date.now() / 1000) + 20 * 60);
-
-      await writeSimpleSwap({
+      // USAMOS SCAFFOLD-ETH PARA SIMPLESWAP
+      await removeLiquidity({
         functionName: "removeLiquidity",
-        args: [tokenAAddress, tokenBAddress, liquidity, amountAMinValue, amountBMinValue, connectedAddress, deadline],
+        args: [
+          tokenAAddress,
+          tokenBAddress,
+          parseEther(liquidityAmount),
+          parseEther(minAmountA),
+          parseEther(minAmountB),
+          connectedAddress,
+          deadline,
+        ],
       });
-
       notification.success("Liquidity removed successfully!");
-
-      // Limpiar formulario
-      setLpTokenAmount("");
-      setAmountAMin("");
-      setAmountBMin("");
-    } catch (error) {
-      console.error("Error removing liquidity:", error);
+    } catch {
       notification.error("Failed to remove liquidity");
     }
   };
 
+  // Mostrar notificaciones cuando las transacciones se completen
+  useEffect(() => {
+    if (isSuccess) {
+      notification.success("Transaction completed successfully!");
+    }
+  }, [isSuccess]);
+
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen py-8 px-4">
-      <div className="bg-base-100 rounded-3xl shadow-lg p-8 w-full max-w-md">
-        <h1 className="text-3xl font-bold text-center mb-8">Liquidity Pool</h1>
+    <>
+      <div className="flex-grow bg-base-300 w-full mt-16 px-8 py-12">
+        <div className="flex justify-center items-center gap-12 flex-col sm:flex-row">
+          <div className="flex flex-col bg-base-100 px-10 py-10 text-center items-center w-full lg:w-[600px] shadow-xl">
+            <h1 className="text-4xl font-bold">Liquidity Pool</h1>
+            <p className="text-base-content/60">Add or remove liquidity from the SimpleSwap pool</p>
 
-        {/* Contract Status */}
-        {!simpleSwapContract && (
-          <div className="alert alert-error mb-4">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="stroke-current shrink-0 h-6 w-6"
-              fill="none"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
-              />
-            </svg>
-            <span>SimpleSwap contract is not deployed on this network</span>
-          </div>
-        )}
-
-        {/* Tabs */}
-        <div className="tabs tabs-boxed mb-6">
-          <button className={`tab ${activeTab === "add" ? "tab-active" : ""}`} onClick={() => setActiveTab("add")}>
-            Add Liquidity
-          </button>
-          <button
-            className={`tab ${activeTab === "remove" ? "tab-active" : ""}`}
-            onClick={() => setActiveTab("remove")}
-          >
-            Remove Liquidity
-          </button>
-        </div>
-
-        {/* Token Addresses - Shared between both tabs */}
-        <div className="mb-6">
-          <label className="block text-sm font-medium mb-2">Token A Address</label>
-          <input
-            type="text"
-            placeholder="0x..."
-            value={tokenAAddress}
-            onChange={e => setTokenAAddress(e.target.value)}
-            className={`input input-bordered w-full ${tokenAAddress && !isTokenAValid ? "input-error" : ""}`}
-          />
-          {tokenAAddress && !isTokenAValid && <p className="text-error text-xs mt-1">Invalid token address</p>}
-        </div>
-
-        <div className="mb-6">
-          <label className="block text-sm font-medium mb-2">Token B Address</label>
-          <input
-            type="text"
-            placeholder="0x..."
-            value={tokenBAddress}
-            onChange={e => setTokenBAddress(e.target.value)}
-            className={`input input-bordered w-full ${tokenBAddress && !isTokenBValid ? "input-error" : ""}`}
-          />
-          {tokenBAddress && !isTokenBValid && <p className="text-error text-xs mt-1">Invalid token address</p>}
-        </div>
-
-        {!areTokensDifferent && tokenAAddress && tokenBAddress && (
-          <div className="alert alert-warning mb-4">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="stroke-current shrink-0 h-6 w-6"
-              fill="none"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"
-              />
-            </svg>
-            <span>Token A and Token B must be different addresses</span>
-          </div>
-        )}
-
-        {activeTab === "add" ? (
-          <>
-            {/* Add Liquidity Form */}
-            <div className="mb-6">
-              <label className="block text-sm font-medium mb-2">Amount Token A</label>
-              <input
-                type="text"
-                placeholder="0.0"
-                value={amountA}
-                onChange={e => setAmountA(e.target.value)}
-                className="input input-bordered w-full"
-              />
-            </div>
-
-            <div className="mb-6">
-              <label className="block text-sm font-medium mb-2">Amount Token B</label>
-              <input
-                type="text"
-                placeholder="0.0"
-                value={amountB}
-                onChange={e => setAmountB(e.target.value)}
-                className="input input-bordered w-full"
-              />
-            </div>
-
-            {/* Token Balances */}
-            {balanceTokenA && (
-              <div className="text-xs text-gray-600 mb-2">Token A Balance: {formatEther(balanceTokenA)}</div>
-            )}
-
-            {balanceTokenB && (
-              <div className="text-xs text-gray-600 mb-2">Token B Balance: {formatEther(balanceTokenB)}</div>
-            )}
-
-            {/* Allowance Information */}
-            {amountA && allowanceTokenA && (
-              <div className={`text-xs mb-2 ${needsTokenAApproval ? "text-error" : "text-success"}`}>
-                Token A Allowance: {formatEther(allowanceTokenA)} / {amountA}
-                {needsTokenAApproval && " ⚠️ Needs approval"}
-              </div>
-            )}
-
-            {amountB && allowanceTokenB && (
-              <div className={`text-xs mb-2 ${needsTokenBApproval ? "text-error" : "text-success"}`}>
-                Token B Allowance: {formatEther(allowanceTokenB)} / {amountB}
-                {needsTokenBApproval && " ⚠️ Needs approval"}
-              </div>
-            )}
-
-            {/* Slippage Protection */}
-            <div className="mb-6">
-              <label className="block text-sm font-medium mb-2">Slippage Protection (Optional)</label>
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="block text-xs text-gray-600 mb-1">Min Token A</label>
-                  <input
-                    type="text"
-                    placeholder="0.0"
-                    value={amountAMin}
-                    onChange={e => setAmountAMin(e.target.value)}
-                    className="input input-bordered w-full"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs text-gray-600 mb-1">Min Token B</label>
-                  <input
-                    type="text"
-                    placeholder="0.0"
-                    value={amountBMin}
-                    onChange={e => setAmountBMin(e.target.value)}
-                    className="input input-bordered w-full"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Approve Button - Solo mostrar si necesita aprobación */}
-            {needsApproval && (
-              <button
-                onClick={handleApproveTokens}
-                disabled={!connectedAddress || !simpleSwapContract || isMining}
-                className="btn btn-accent w-full mb-2"
-              >
-                Approve Tokens
+            {/* Tabs */}
+            <div className="tabs tabs-boxed mt-6">
+              <button className={`tab ${activeTab === "add" ? "tab-active" : ""}`} onClick={() => setActiveTab("add")}>
+                Add Liquidity
               </button>
+              <button
+                className={`tab ${activeTab === "remove" ? "tab-active" : ""}`}
+                onClick={() => setActiveTab("remove")}
+              >
+                Remove Liquidity
+              </button>
+            </div>
+
+            {activeTab === "add" ? (
+              <div className="w-full mt-6 space-y-4">
+                {/* Token A */}
+                <div className="form-control">
+                  <label className="label">
+                    <span className="label-text">Token A Address</span>
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="0x..."
+                    className="input input-bordered"
+                    value={tokenAAddress}
+                    onChange={e => setTokenAAddress(e.target.value)}
+                  />
+                  {isTokenAValid && (
+                    <div className="mt-2 text-sm text-base-content/70">
+                      <div>Balance: {tokenABalance} tokens</div>
+                      <div>Allowance: {tokenAAllowance} tokens</div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Token B */}
+                <div className="form-control">
+                  <label className="label">
+                    <span className="label-text">Token B Address</span>
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="0x..."
+                    className="input input-bordered"
+                    value={tokenBAddress}
+                    onChange={e => setTokenBAddress(e.target.value)}
+                  />
+                  {isTokenBValid && (
+                    <div className="mt-2 text-sm text-base-content/70">
+                      <div>Balance: {tokenBBalance} tokens</div>
+                      <div>Allowance: {tokenBAllowance} tokens</div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Amount A */}
+                <div className="form-control">
+                  <label className="label">
+                    <span className="label-text">Amount Token A</span>
+                  </label>
+                  <input
+                    type="number"
+                    placeholder="0.0"
+                    className="input input-bordered"
+                    value={amountA}
+                    onChange={e => setAmountA(e.target.value)}
+                  />
+                </div>
+
+                {/* Amount B */}
+                <div className="form-control">
+                  <label className="label">
+                    <span className="label-text">Amount Token B</span>
+                  </label>
+                  <input
+                    type="number"
+                    placeholder="0.0"
+                    className="input input-bordered"
+                    value={amountB}
+                    onChange={e => setAmountB(e.target.value)}
+                  />
+                </div>
+
+                {/* Approve Buttons */}
+                <div className="flex gap-2">
+                  <button
+                    className="btn btn-secondary flex-1"
+                    onClick={handleApproveTokenA}
+                    disabled={!isTokenAValid || !amountA || isConfirming}
+                  >
+                    {isConfirming ? "Approving..." : "Approve Token A"}
+                  </button>
+                  <button
+                    className="btn btn-secondary flex-1"
+                    onClick={handleApproveTokenB}
+                    disabled={!isTokenBValid || !amountB || isConfirming}
+                  >
+                    {isConfirming ? "Approving..." : "Approve Token B"}
+                  </button>
+                </div>
+
+                {/* Add Liquidity Button */}
+                <button
+                  className="btn btn-primary w-full"
+                  onClick={handleAddLiquidity}
+                  disabled={
+                    !connectedAddress ||
+                    !isTokenAValid ||
+                    !isTokenBValid ||
+                    !amountA ||
+                    !amountB ||
+                    !areTokensDifferent ||
+                    isConfirming
+                  }
+                >
+                  {isConfirming ? "Adding Liquidity..." : "Add Liquidity"}
+                </button>
+              </div>
+            ) : (
+              <div className="w-full mt-6 space-y-4">
+                {/* Remove Liquidity Form */}
+                <div className="form-control">
+                  <label className="label">
+                    <span className="label-text">Token A Address</span>
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="0x..."
+                    className="input input-bordered"
+                    value={tokenAAddress}
+                    onChange={e => setTokenAAddress(e.target.value)}
+                  />
+                </div>
+
+                <div className="form-control">
+                  <label className="label">
+                    <span className="label-text">Token B Address</span>
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="0x..."
+                    className="input input-bordered"
+                    value={tokenBAddress}
+                    onChange={e => setTokenBAddress(e.target.value)}
+                  />
+                </div>
+
+                <div className="form-control">
+                  <label className="label">
+                    <span className="label-text">LP Token Amount</span>
+                  </label>
+                  <input
+                    type="number"
+                    placeholder="0.0"
+                    className="input input-bordered"
+                    value={amountA}
+                    onChange={e => setAmountA(e.target.value)}
+                  />
+                </div>
+
+                <div className="form-control">
+                  <label className="label">
+                    <span className="label-text">Min Token A</span>
+                  </label>
+                  <input
+                    type="number"
+                    placeholder="0.0"
+                    className="input input-bordered"
+                    value={amountB}
+                    onChange={e => setAmountB(e.target.value)}
+                  />
+                </div>
+
+                <button
+                  className="btn btn-primary w-full"
+                  onClick={handleRemoveLiquidity}
+                  disabled={
+                    !connectedAddress ||
+                    !isTokenAValid ||
+                    !isTokenBValid ||
+                    !amountA ||
+                    !amountB ||
+                    !areTokensDifferent ||
+                    isConfirming
+                  }
+                >
+                  {isConfirming ? "Removing Liquidity..." : "Remove Liquidity"}
+                </button>
+              </div>
             )}
 
-            <button
-              onClick={handleAddLiquidity}
-              disabled={
-                !connectedAddress ||
-                !isTokenAValid ||
-                !isTokenBValid ||
-                !amountA ||
-                !amountB ||
-                !areTokensDifferent ||
-                !simpleSwapContract ||
-                needsApproval ||
-                !hasEnoughBalance ||
-                isMining
-              }
-              className="btn btn-primary w-full mb-4"
-            >
-              {!connectedAddress
-                ? "Connect Wallet"
-                : needsApproval
-                  ? "Approve Tokens First"
-                  : !hasEnoughBalance
-                    ? "Insufficient Balance"
-                    : isMining
-                      ? "Adding Liquidity..."
-                      : "Add Liquidity"}
-            </button>
-          </>
-        ) : (
-          <>
-            {/* Remove Liquidity Form */}
-            <div className="mb-6">
-              <label className="block text-sm font-medium mb-2">LP Token Amount</label>
-              <input
-                type="text"
-                placeholder="0.0"
-                value={lpTokenAmount}
-                onChange={e => setLpTokenAmount(e.target.value)}
-                className="input input-bordered w-full"
-              />
+            <div className="mt-8">
+              <Link href="/" className="link">
+                ← Back to home
+              </Link>
             </div>
-
-            {/* Slippage Protection */}
-            <div className="mb-6">
-              <label className="block text-sm font-medium mb-2">Slippage Protection (Optional)</label>
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="block text-xs text-gray-600 mb-1">Min Token A</label>
-                  <input
-                    type="text"
-                    placeholder="0.0"
-                    value={amountAMin}
-                    onChange={e => setAmountAMin(e.target.value)}
-                    className="input input-bordered w-full"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs text-gray-600 mb-1">Min Token B</label>
-                  <input
-                    type="text"
-                    placeholder="0.0"
-                    value={amountBMin}
-                    onChange={e => setAmountBMin(e.target.value)}
-                    className="input input-bordered w-full"
-                  />
-                </div>
-              </div>
-            </div>
-
-            <button
-              onClick={handleRemoveLiquidity}
-              disabled={
-                !connectedAddress ||
-                !isTokenAValid ||
-                !isTokenBValid ||
-                !lpTokenAmount ||
-                !areTokensDifferent ||
-                !simpleSwapContract ||
-                isMining
-              }
-              className="btn btn-secondary w-full mb-4"
-            >
-              {!connectedAddress ? "Connect Wallet" : isMining ? "Removing Liquidity..." : "Remove Liquidity"}
-            </button>
-          </>
-        )}
-
-        {/* Connected Address */}
-        <div className="mb-6 text-center">
-          <p className="text-sm text-gray-600 mb-2">Connected Address:</p>
-          <Address address={connectedAddress} />
-        </div>
-
-        {/* SimpleSwap Contract Address */}
-        {simpleSwapContract && (
-          <div className="mb-6 text-center">
-            <p className="text-sm text-gray-600 mb-2">SimpleSwap Contract:</p>
-            <Address address={simpleSwapContract.address} />
           </div>
-        )}
-
-        {/* Back to Home */}
-        <div className="text-center">
-          <Link href="/" className="link link-primary">
-            ← Back to Home
-          </Link>
         </div>
       </div>
-    </div>
+    </>
   );
 };
 
