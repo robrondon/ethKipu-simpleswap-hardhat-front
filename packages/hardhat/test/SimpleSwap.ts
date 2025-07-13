@@ -138,6 +138,12 @@ describe("SimpleSwap", () => {
 
       const [token0, token1] =
         tokenA.target < tokenB.target ? [tokenA.target, tokenB.target] : [tokenB.target, tokenA.target];
+
+      const [amount0, amount1] =
+        tokenA.target < tokenB.target
+          ? [LIQUIDITY_AMOUNT_A, LIQUIDITY_AMOUNT_B]
+          : [LIQUIDITY_AMOUNT_B, LIQUIDITY_AMOUNT_A];
+
       const lpTokenAddress = await simpleSwap.lpTokens(token0, token1);
       const lpToken = await ethers.getContractAt("LPToken", lpTokenAddress);
       const lpBalance = await lpToken.balanceOf(user1.address);
@@ -156,14 +162,7 @@ describe("SimpleSwap", () => {
 
       await expect(tx)
         .to.emit(simpleSwap, "LiquidityRemoved")
-        .withArgs(
-          tokenA.target,
-          tokenB.target,
-          user1.address,
-          LIQUIDITY_AMOUNT_A / 2n,
-          LIQUIDITY_AMOUNT_B / 2n,
-          liquidityToRemove,
-        );
+        .withArgs(tokenA.target, tokenB.target, user1.address, amount0 / 2n, amount1 / 2n, liquidityToRemove);
     });
   });
 
