@@ -90,5 +90,25 @@ describe("SimpleSwap", () => {
       expect(reserves.reserveB).to.be.gt(0);
       expect(reserves.totalLiquidity).to.be.gt(0);
     });
+
+    it("Should fail when deadline is exceeded", async () => {
+      const { simpleSwap, tokenA, tokenB, user1 } = await loadFixture(deployContractsFixture);
+      const expiredDeadline = (await ethers.provider.getBlock("latest"))!.timestamp - 1; // Expired deadline
+
+      await expect(
+        simpleSwap
+          .connect(user1)
+          .addLiquidity(
+            tokenA.target,
+            tokenB.target,
+            LIQUIDITY_AMOUNT_A,
+            LIQUIDITY_AMOUNT_B,
+            0,
+            0,
+            user1.address,
+            expiredDeadline,
+          ),
+      ).to.be.revertedWith("SimpleSwap: Expired deadline");
+    });
   });
 });
