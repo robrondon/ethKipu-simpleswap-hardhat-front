@@ -111,4 +111,52 @@ describe("SimpleSwap", () => {
       ).to.be.revertedWith("SimpleSwap: Expired deadline");
     });
   });
+
+  describe("removeLiquidity", () => {
+    it("Should remove liquidity successfully", async () => {
+      const { simpleSwap, tokenA, tokenB, user1, deadline } = await loadFixture(deployContractsFixture);
+
+      await simpleSwap
+        .connect(user1)
+        .addLiquidity(
+          tokenA.target,
+          tokenB.target,
+          LIQUIDITY_AMOUNT_A,
+          LIQUIDITY_AMOUNT_B,
+          0,
+          0,
+          user1.address,
+          deadline,
+        );
+
+      const [token0, token1] =
+        tokenA.target < tokenB.target ? [tokenA.target, tokenB.target] : [tokenB.target, tokenA.target];
+      const lpTokenAddress = await simpleSwap.lpTokens(token0, token1);
+      const lpToken = await ethers.getContractAt("LPToken", lpTokenAddress);
+      const lpBalance = await lpToken.balanceOf(user1.address);
+
+      const liquidityToRemove = lpBalance / 2n;
+
+      const tx = await simpleSwap.connect(user1).removeLiquidity(
+        tokenA.target,
+        tokenB.target,
+        liquidityToRemove,
+        0, // amountAMin
+        0, // amountBMin
+        user1.address,
+        deadline,
+      );
+
+      await expect(tx)
+        .to.emit(simpleSwap, "LiquidityRemoved")
+        .withArgs(
+          tokenA.target,
+          tokenB.target,
+          user1.address,
+          LIQUIDITY_AMOUNT_B / 2n,
+          LIQUIDITY_AMOUNT_A / 2n,
+          liquidityToRemove,
+        );
+    });
+  });
 });
