@@ -164,6 +164,56 @@ describe("SimpleSwap", () => {
         ),
       ).to.be.revertedWith("SimpleSwap: Invalid token address");
     });
+
+    it("Should fail with zero desired amounts", async () => {
+      const { simpleSwap, tokenA, tokenB, user1, deadline } = await loadFixture(deployContractsFixture);
+
+      await expect(
+        simpleSwap.connect(user1).addLiquidity(
+          tokenA.target,
+          tokenB.target,
+          0, // Zero amount
+          LIQUIDITY_AMOUNT_B,
+          0,
+          0,
+          user1.address,
+          deadline,
+        ),
+      ).to.be.revertedWith("SimpleSwap: Desired A amount must be greater than zero");
+    });
+
+    it("Should fail when minimum amounts exceed desired amounts", async () => {
+      const { simpleSwap, tokenA, tokenB, user1, deadline } = await loadFixture(deployContractsFixture);
+
+      await expect(
+        simpleSwap.connect(user1).addLiquidity(
+          tokenA.target,
+          tokenB.target,
+          LIQUIDITY_AMOUNT_A,
+          LIQUIDITY_AMOUNT_B,
+          LIQUIDITY_AMOUNT_A + parseEther("1"), // Min > desired
+          0,
+          user1.address,
+          deadline,
+        ),
+      ).to.be.revertedWith("SimpleSwap: Minumum A amount exceeds desired A amount");
+    });
+
+    it("Should fail when calculated liquidity is zero in existing pool", async () => {
+      const { simpleSwap, tokenA, tokenB, user2, deadline } = await loadFixture(addLiquidityFixture);
+
+      const [token0, token1] =
+        tokenA.target < tokenB.target ? [tokenA.target, tokenB.target] : [tokenB.target, tokenA.target];
+      await simpleSwap.reserves(token0, token1);
+
+      const tinyAmount = 1n; // 1 wei
+
+      await expect(
+        simpleSwap
+          .connect(user2)
+          .addLiquidity(tokenA.target, tokenB.target, tinyAmount, tinyAmount, 0, 0, user2.address, deadline),
+      ).to.be.revertedWith("SimpleSwap: Calculated liquidity is zero");
+    });
   });
 
   describe("removeLiquidity", () => {
