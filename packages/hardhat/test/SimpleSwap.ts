@@ -11,6 +11,7 @@ describe("SimpleSwap", () => {
   const TRANSFER_AMOUNT = parseEther("10000"); // 10K tokens
   const LIQUIDITY_AMOUNT_A = parseEther("100"); // 100 tokens
   const LIQUIDITY_AMOUNT_B = parseEther("200"); // 200 tokens
+  const SWAP_AMOUNT = parseEther("10"); // 10 tokens
 
   const deployContractsFixture = async () => {
     // Trx signers
@@ -44,7 +45,7 @@ describe("SimpleSwap", () => {
   };
 
   const addLiquidityFixture = async () => {
-    const { simpleSwap, tokenA, tokenB, user1, deadline } = await loadFixture(deployContractsFixture);
+    const { simpleSwap, tokenA, tokenB, user1, user2, deadline } = await loadFixture(deployContractsFixture);
 
     await simpleSwap
       .connect(user1)
@@ -59,7 +60,7 @@ describe("SimpleSwap", () => {
         deadline,
       );
 
-    return { simpleSwap, tokenA, tokenB, user1, deadline };
+    return { simpleSwap, tokenA, tokenB, user1, user2, deadline };
   };
 
   describe("Deployment", () => {
@@ -182,7 +183,7 @@ describe("SimpleSwap", () => {
     });
   });
 
-  describe("Get Amount Out", function () {
+  describe("Get Amount Out", () => {
     it("Should calculate correct amount out", async function () {
       const { simpleSwap } = await loadFixture(deployContractsFixture);
       const amountIn = parseEther("10");
@@ -207,6 +208,31 @@ describe("SimpleSwap", () => {
       await expect(simpleSwap.getAmountOut(parseEther("10"), 0, parseEther("200"))).to.be.revertedWith(
         "SimpleSwap: No liquidity for this pair",
       );
+    });
+  });
+
+  describe("Swap Tokens", () => {
+    it("Should swap tokens successfully", async function () {
+      const { simpleSwap, tokenA, tokenB, user2, deadline } = await loadFixture(addLiquidityFixture);
+
+      const initialBalanceA = await tokenA.balanceOf(user2.address);
+      const initialBalanceB = await tokenB.balanceOf(user2.address);
+
+      const tx = await simpleSwap.connect(user2).swapExactTokensForTokens(
+        SWAP_AMOUNT,
+        0, // amountOutMin
+        [tokenA.target, tokenB.target],
+        user2.address,
+        deadline,
+      );
+
+      await expect(tx).to.emit(simpleSwap, "SwappedTokens");
+
+      const finalBalanceA = await tokenA.balanceOf(user2.address);
+      const finalBalanceB = await tokenB.balanceOf(user2.address);
+
+      expect(finalBalanceA).to.equal(initialBalanceA - SWAP_AMOUNT);
+      expect(finalBalanceB).to.be.gt(initialBalanceB);
     });
   });
 });
