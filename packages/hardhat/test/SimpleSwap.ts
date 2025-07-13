@@ -317,5 +317,17 @@ describe("SimpleSwap", () => {
       expect(finalBalanceA).to.equal(initialBalanceA - SWAP_AMOUNT);
       expect(finalBalanceB).to.be.gt(initialBalanceB);
     });
+
+    it("Should cover both branches of _updateReservesAfterSwap", async () => {
+      const { simpleSwap, tokenA, tokenB, user2, deadline } = await loadFixture(addLiquidityFixture);
+
+      await simpleSwap
+        .connect(user2)
+        .swapExactTokensForTokens(SWAP_AMOUNT, 0, [tokenA.target, tokenB.target], user2.address, deadline);
+
+      await simpleSwap
+        .connect(user2)
+        .swapExactTokensForTokens(SWAP_AMOUNT, 0, [tokenB.target, tokenA.target], user2.address, deadline);
+    });
   });
 });
