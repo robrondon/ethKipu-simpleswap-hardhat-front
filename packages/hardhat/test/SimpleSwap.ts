@@ -43,6 +43,25 @@ describe("SimpleSwap", () => {
     return { deadline, deployer, simpleSwap, user1, user2, tokenA, tokenB };
   };
 
+  const addLiquidityFixture = async () => {
+    const { simpleSwap, tokenA, tokenB, user1, deadline } = await loadFixture(deployContractsFixture);
+
+    await simpleSwap
+      .connect(user1)
+      .addLiquidity(
+        tokenA.target,
+        tokenB.target,
+        LIQUIDITY_AMOUNT_A,
+        LIQUIDITY_AMOUNT_B,
+        0,
+        0,
+        user1.address,
+        deadline,
+      );
+
+    return { simpleSwap, tokenA, tokenB, user1, deadline };
+  };
+
   describe("Deployment", () => {
     it("Should deploy SimpleSwap contract successfully", async () => {
       const { simpleSwap } = await loadFixture(deployContractsFixture);
@@ -114,20 +133,7 @@ describe("SimpleSwap", () => {
 
   describe("removeLiquidity", () => {
     it("Should remove liquidity successfully", async () => {
-      const { simpleSwap, tokenA, tokenB, user1, deadline } = await loadFixture(deployContractsFixture);
-
-      await simpleSwap
-        .connect(user1)
-        .addLiquidity(
-          tokenA.target,
-          tokenB.target,
-          LIQUIDITY_AMOUNT_A,
-          LIQUIDITY_AMOUNT_B,
-          0,
-          0,
-          user1.address,
-          deadline,
-        );
+      const { simpleSwap, tokenA, tokenB, user1, deadline } = await loadFixture(addLiquidityFixture);
 
       const [token0, token1] =
         tokenA.target < tokenB.target ? [tokenA.target, tokenB.target] : [tokenB.target, tokenA.target];
@@ -153,10 +159,26 @@ describe("SimpleSwap", () => {
           tokenA.target,
           tokenB.target,
           user1.address,
-          LIQUIDITY_AMOUNT_B / 2n,
           LIQUIDITY_AMOUNT_A / 2n,
+          LIQUIDITY_AMOUNT_B / 2n,
           liquidityToRemove,
         );
+    });
+  });
+
+  describe("getPrice", () => {
+    it("Should return correct price", async () => {
+      const { simpleSwap, tokenA, tokenB } = await loadFixture(addLiquidityFixture);
+      const price = await simpleSwap.getPrice(tokenA.target, tokenB.target);
+
+      expect(price).to.equal(parseEther("0.5"));
+    });
+
+    it("Should return correct inverse price", async () => {
+      const { simpleSwap, tokenA, tokenB } = await loadFixture(addLiquidityFixture);
+      const price = await simpleSwap.getPrice(tokenB.target, tokenA.target);
+
+      expect(price).to.equal(parseEther("2"));
     });
   });
 });
