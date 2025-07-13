@@ -181,4 +181,32 @@ describe("SimpleSwap", () => {
       expect(price).to.equal(parseEther("2"));
     });
   });
+
+  describe("Get Amount Out", function () {
+    it("Should calculate correct amount out", async function () {
+      const { simpleSwap } = await loadFixture(deployContractsFixture);
+      const amountIn = parseEther("10");
+      const reserveIn = parseEther("100");
+      const reserveOut = parseEther("200");
+
+      const amountOut = await simpleSwap.getAmountOut(amountIn, reserveIn, reserveOut);
+
+      const expected = (amountIn * reserveOut) / (reserveIn + amountIn);
+      expect(amountOut).to.equal(expected);
+    });
+
+    it("Should fail with zero amount in", async function () {
+      const { simpleSwap } = await loadFixture(deployContractsFixture);
+      await expect(simpleSwap.getAmountOut(0, parseEther("100"), parseEther("200"))).to.be.revertedWith(
+        "SimpleSwap: Amount in must be greater than zero",
+      );
+    });
+
+    it("Should fail with zero reserves", async function () {
+      const { simpleSwap } = await loadFixture(deployContractsFixture);
+      await expect(simpleSwap.getAmountOut(parseEther("10"), 0, parseEther("200"))).to.be.revertedWith(
+        "SimpleSwap: No liquidity for this pair",
+      );
+    });
+  });
 });
