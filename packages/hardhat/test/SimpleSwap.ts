@@ -130,6 +130,7 @@ describe("SimpleSwap", () => {
           ),
       ).to.be.revertedWith("SimpleSwap: Expired deadline");
     });
+
     it("Should fail with identical tokens", async () => {
       const { simpleSwap, tokenA, user1, deadline } = await loadFixture(deployContractsFixture);
 
@@ -145,6 +146,23 @@ describe("SimpleSwap", () => {
           deadline,
         ),
       ).to.be.revertedWith("SimpleSwap: Identical tokens");
+    });
+
+    it("Should fail with zero address tokens", async () => {
+      const { simpleSwap, tokenA, user1, deadline } = await loadFixture(deployContractsFixture);
+
+      await expect(
+        simpleSwap.connect(user1).addLiquidity(
+          tokenA.target,
+          ethers.ZeroAddress, // Zero address
+          LIQUIDITY_AMOUNT_A,
+          LIQUIDITY_AMOUNT_B,
+          0,
+          0,
+          user1.address,
+          deadline,
+        ),
+      ).to.be.revertedWith("SimpleSwap: Invalid token address");
     });
   });
 
