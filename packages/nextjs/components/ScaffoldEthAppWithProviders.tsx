@@ -18,7 +18,7 @@ const ScaffoldEthApp = ({ children }: { children: React.ReactNode }) => {
 
   return (
     <>
-      <div className={`flex flex-col min-h-screen `}>
+      <div className={`flex flex-col min-h-screen bg-base-100`}>
         <Header />
         <main className="relative flex flex-col flex-1">{children}</main>
         <Footer />
@@ -36,6 +36,23 @@ export const queryClient = new QueryClient({
   },
 });
 
+// Custom theme for purple design
+const customDarkTheme = darkTheme({
+  accentColor: "#8b5cf6",
+  accentColorForeground: "#ffffff",
+  borderRadius: "large",
+  fontStack: "system",
+  overlayBlur: "small",
+});
+
+const customLightTheme = lightTheme({
+  accentColor: "#8b5cf6",
+  accentColorForeground: "#ffffff",
+  borderRadius: "large",
+  fontStack: "system",
+  overlayBlur: "small",
+});
+
 export const ScaffoldEthAppWithProviders = ({ children }: { children: React.ReactNode }) => {
   const { resolvedTheme } = useTheme();
   const isDarkMode = resolvedTheme === "dark";
@@ -48,10 +65,10 @@ export const ScaffoldEthAppWithProviders = ({ children }: { children: React.Reac
   return (
     <WagmiProvider config={wagmiConfig}>
       <QueryClientProvider client={queryClient}>
-        <ProgressBar height="3px" color="#2299dd" />
+        <ProgressBar height="3px" color="#8b5cf6" />
         <RainbowKitProvider
           avatar={BlockieAvatar}
-          theme={mounted ? (isDarkMode ? darkTheme() : lightTheme()) : lightTheme()}
+          theme={mounted ? (isDarkMode ? customDarkTheme : customLightTheme) : customLightTheme}
         >
           <ScaffoldEthApp>{children}</ScaffoldEthApp>
         </RainbowKitProvider>

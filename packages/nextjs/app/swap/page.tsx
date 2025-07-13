@@ -357,10 +357,10 @@ const SwapPage: NextPage = () => {
     if (!poolInfo) return null;
 
     return (
-      <div className="bg-base-200 rounded-lg p-4 mb-6">
-        <h3 className="font-medium mb-2">Pool Information</h3>
+      <div className="bg-base-100 rounded-lg p-4 mb-6 border border-primary/20">
+        <h3 className="font-medium mb-2 text-primary">Pool Information</h3>
         {poolInfo.exists ? (
-          <div className="space-y-1 text-sm">
+          <div className="space-y-1 text-sm text-base-content">
             <div className="flex justify-between">
               <span>{poolInfo.token0Symbol} Reserve:</span>
               <span>{parseFloat(poolInfo.reserve0).toFixed(4)}</span>
@@ -389,9 +389,9 @@ const SwapPage: NextPage = () => {
     if (!amountIn || !estimatedAmountOut) return null;
 
     return (
-      <div className="bg-base-200 rounded-lg p-4 mb-6">
-        <h3 className="font-medium mb-2">Swap Details</h3>
-        <div className="space-y-1 text-sm">
+      <div className="bg-base-100 rounded-lg p-4 mb-6 border border-primary/20">
+        <h3 className="font-medium mb-2 text-primary">Swap Details</h3>
+        <div className="space-y-1 text-sm text-base-content">
           <div className="flex justify-between">
             <span>Input Amount:</span>
             <span>
@@ -424,39 +424,39 @@ const SwapPage: NextPage = () => {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen py-8 px-4">
-      <div className="bg-base-100 rounded-3xl shadow-lg p-8 w-full max-w-md">
-        <h1 className="text-3xl font-bold text-center mb-8">Token Swap</h1>
+    <div className="flex flex-col items-center justify-center min-h-screen py-8 px-4 bg-base-100">
+      <div className="bg-base-200 rounded-3xl shadow-lg p-8 w-full max-w-md border border-primary/20">
+        <h1 className="text-3xl font-bold text-center mb-8 text-primary">Token Swap</h1>
 
         {/* Slippage Tolerance */}
         <div className="mb-6">
-          <label className="block text-sm font-medium mb-2">Slippage Tolerance (%)</label>
+          <label className="block text-sm font-medium mb-2 text-base-content">Slippage Tolerance (%)</label>
           <div className="flex gap-2">
             <input
               type="number"
               placeholder="0.5"
               value={slippageTolerance}
               onChange={e => setSlippageTolerance(e.target.value)}
-              className="input input-bordered flex-1"
+              className="input input-bordered flex-1 bg-base-100 border-primary/30 text-base-content"
               step="0.1"
               min="0"
               max="50"
             />
             <div className="flex gap-1">
               <button
-                className={`btn btn-xs ${slippageTolerance === "0.1" ? "btn-primary" : "btn-outline"}`}
+                className={`btn btn-xs ${slippageTolerance === "0.1" ? "btn-primary" : "btn-outline border-primary/30 text-primary hover:bg-primary hover:text-primary-content"}`}
                 onClick={() => setSlippageTolerance("0.1")}
               >
                 0.1%
               </button>
               <button
-                className={`btn btn-xs ${slippageTolerance === "0.5" ? "btn-primary" : "btn-outline"}`}
+                className={`btn btn-xs ${slippageTolerance === "0.5" ? "btn-primary" : "btn-outline border-primary/30 text-primary hover:bg-primary hover:text-primary-content"}`}
                 onClick={() => setSlippageTolerance("0.5")}
               >
                 0.5%
               </button>
               <button
-                className={`btn btn-xs ${slippageTolerance === "1.0" ? "btn-primary" : "btn-outline"}`}
+                className={`btn btn-xs ${slippageTolerance === "1.0" ? "btn-primary" : "btn-outline border-primary/30 text-primary hover:bg-primary hover:text-primary-content"}`}
                 onClick={() => setSlippageTolerance("1.0")}
               >
                 1%
@@ -467,21 +467,21 @@ const SwapPage: NextPage = () => {
 
         {/* Token A Input */}
         <div className="mb-6">
-          <label className="block text-sm font-medium mb-2">From</label>
+          <label className="block text-sm font-medium mb-2 text-base-content">From</label>
           <div className="flex gap-2 mb-2">
             <input
               type="text"
               placeholder="0.0"
               value={amountIn}
               onChange={e => setAmountIn(e.target.value)}
-              className="input input-bordered flex-1"
+              className="input input-bordered flex-1 bg-base-100 border-primary/30 text-base-content"
             />
             <input
               type="text"
               placeholder="0x..."
               value={tokenAAddress}
               onChange={e => setTokenAAddress(e.target.value)}
-              className={`input input-bordered flex-1 ${tokenAAddress && !isTokenAValid ? "input-error" : ""}`}
+              className={`input input-bordered flex-1 bg-base-100 border-primary/30 text-base-content ${tokenAAddress && !isTokenAValid ? "input-error" : ""}`}
             />
           </div>
           {tokenAAddress && !isTokenAValid && <p className="text-error text-xs mt-1">Invalid token address</p>}
@@ -503,7 +503,7 @@ const SwapPage: NextPage = () => {
         {isTokenAValid && needsApproval() && (
           <div className="mb-6">
             <button
-              className="btn btn-secondary w-full"
+              className="btn btn-secondary w-full bg-accent text-accent-content hover:bg-accent/90"
               onClick={handleApproveTokenA}
               disabled={!amountIn || isConfirming}
             >
@@ -515,7 +515,7 @@ const SwapPage: NextPage = () => {
         {/* Swap Arrow */}
         <div className="flex justify-center mb-6">
           <button
-            className="btn btn-circle btn-outline"
+            className="btn btn-circle btn-outline border-primary/30 text-primary hover:bg-primary hover:text-primary-content"
             onClick={handleSwitchTokens}
             disabled={!tokenAAddress || !tokenBAddress}
           >
@@ -527,13 +527,13 @@ const SwapPage: NextPage = () => {
 
         {/* Token B Input */}
         <div className="mb-6">
-          <label className="block text-sm font-medium mb-2">To (estimated)</label>
+          <label className="block text-sm font-medium mb-2 text-base-content">To (estimated)</label>
           <div className="flex gap-2 mb-2">
             <input
               type="text"
               placeholder="0.0"
               value={estimatedAmountOut}
-              className="input input-bordered flex-1"
+              className="input input-bordered flex-1 bg-base-100 border-primary/30 text-base-content"
               readOnly
             />
             <input
@@ -541,7 +541,7 @@ const SwapPage: NextPage = () => {
               placeholder="0x..."
               value={tokenBAddress}
               onChange={e => setTokenBAddress(e.target.value)}
-              className={`input input-bordered flex-1 ${tokenBAddress && !isTokenBValid ? "input-error" : ""}`}
+              className={`input input-bordered flex-1 bg-base-100 border-primary/30 text-base-content ${tokenBAddress && !isTokenBValid ? "input-error" : ""}`}
             />
           </div>
           {tokenBAddress && !isTokenBValid && <p className="text-error text-xs mt-1">Invalid token address</p>}
@@ -557,15 +557,15 @@ const SwapPage: NextPage = () => {
 
         {/* Minimum Amount Out */}
         <div className="mb-6">
-          <label className="block text-sm font-medium mb-2">Minimum Amount Out</label>
+          <label className="block text-sm font-medium mb-2 text-base-content">Minimum Amount Out</label>
           <input
             type="text"
             placeholder="Auto-calculated"
             value={amountOutMin}
             onChange={e => setAmountOutMin(e.target.value)}
-            className="input input-bordered w-full"
+            className="input input-bordered w-full bg-base-100 border-primary/30 text-base-content"
           />
-          <p className="text-xs text-gray-600 mt-1">
+          <p className="text-xs text-base-content/60 mt-1">
             Auto-calculated based on slippage tolerance. You can override this value.
           </p>
         </div>
@@ -576,7 +576,7 @@ const SwapPage: NextPage = () => {
 
         {/* Error Messages */}
         {!areTokensDifferent && tokenAAddress && tokenBAddress && (
-          <div className="alert alert-warning mb-4">
+          <div className="alert alert-warning mb-4 bg-warning/20 border-warning/30 text-warning-content">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               className="stroke-current shrink-0 h-6 w-6"
@@ -606,7 +606,7 @@ const SwapPage: NextPage = () => {
             isMining ||
             needsApproval()
           }
-          className="btn btn-primary w-full mb-4"
+          className="btn btn-primary w-full mb-4 bg-primary text-primary-content hover:bg-primary/90"
         >
           {!connectedAddress
             ? "Connect Wallet"
@@ -619,13 +619,13 @@ const SwapPage: NextPage = () => {
 
         {/* Connected Address */}
         <div className="mb-6 text-center">
-          <p className="text-sm text-gray-600 mb-2">Connected Address:</p>
+          <p className="text-sm text-base-content/70 mb-2">Connected Address:</p>
           <Address address={connectedAddress} />
         </div>
 
         {/* Back to Home */}
         <div className="text-center">
-          <Link href="/" className="link link-primary">
+          <Link href="/" className="link link-primary text-primary hover:text-primary/80">
             ← Back to Home
           </Link>
         </div>

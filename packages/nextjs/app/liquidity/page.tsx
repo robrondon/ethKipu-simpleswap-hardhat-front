@@ -281,19 +281,22 @@ const PoolPage: NextPage = () => {
 
   return (
     <>
-      <div className="flex-grow bg-base-300 w-full mt-16 px-8 py-12">
+      <div className="flex-grow bg-base-100 w-full mt-16 px-8 py-12">
         <div className="flex justify-center items-center gap-12 flex-col sm:flex-row">
-          <div className="flex flex-col bg-base-100 px-10 py-10 text-center items-center w-full lg:w-[600px] shadow-xl">
-            <h1 className="text-4xl font-bold">Liquidity Pool</h1>
-            <p className="text-base-content/60">Add or remove liquidity from the SimpleSwap pool</p>
+          <div className="flex flex-col bg-base-200 px-10 py-10 text-center items-center w-full lg:w-[600px] shadow-xl border border-primary/20 rounded-3xl">
+            <h1 className="text-4xl font-bold text-primary">Liquidity Pool</h1>
+            <p className="text-base-content/70">Add or remove liquidity from the SimpleSwap pool</p>
 
             {/* Tabs */}
-            <div className="tabs tabs-boxed mt-6">
-              <button className={`tab ${activeTab === "add" ? "tab-active" : ""}`} onClick={() => setActiveTab("add")}>
+            <div className="tabs tabs-boxed mt-6 bg-base-100 border border-primary/20">
+              <button
+                className={`tab ${activeTab === "add" ? "tab-active bg-primary text-primary-content" : "text-base-content hover:bg-primary/20"}`}
+                onClick={() => setActiveTab("add")}
+              >
                 Add Liquidity
               </button>
               <button
-                className={`tab ${activeTab === "remove" ? "tab-active" : ""}`}
+                className={`tab ${activeTab === "remove" ? "tab-active bg-primary text-primary-content" : "text-base-content hover:bg-primary/20"}`}
                 onClick={() => setActiveTab("remove")}
               >
                 Remove Liquidity
@@ -305,12 +308,12 @@ const PoolPage: NextPage = () => {
                 {/* Slippage Tolerance */}
                 <div className="form-control">
                   <label className="label">
-                    <span className="label-text">Slippage Tolerance (%)</span>
+                    <span className="label-text text-base-content">Slippage Tolerance (%)</span>
                   </label>
                   <input
                     type="number"
                     placeholder="0.5"
-                    className="input input-bordered"
+                    className="input input-bordered bg-base-100 border-primary/30 text-base-content"
                     value={slippageTolerance}
                     onChange={e => setSlippageTolerance(e.target.value)}
                     step="0.1"
@@ -322,12 +325,12 @@ const PoolPage: NextPage = () => {
                 {/* Token A */}
                 <div className="form-control">
                   <label className="label">
-                    <span className="label-text">Token A Address</span>
+                    <span className="label-text text-base-content">Token A Address</span>
                   </label>
                   <input
                     type="text"
                     placeholder="0x..."
-                    className="input input-bordered"
+                    className="input input-bordered bg-base-100 border-primary/30 text-base-content"
                     value={tokenAAddress}
                     onChange={e => setTokenAAddress(e.target.value)}
                   />
@@ -342,12 +345,12 @@ const PoolPage: NextPage = () => {
                 {/* Token B */}
                 <div className="form-control">
                   <label className="label">
-                    <span className="label-text">Token B Address</span>
+                    <span className="label-text text-base-content">Token B Address</span>
                   </label>
                   <input
                     type="text"
                     placeholder="0x..."
-                    className="input input-bordered"
+                    className="input input-bordered bg-base-100 border-primary/30 text-base-content"
                     value={tokenBAddress}
                     onChange={e => setTokenBAddress(e.target.value)}
                   />
@@ -362,12 +365,12 @@ const PoolPage: NextPage = () => {
                 {/* Amount A */}
                 <div className="form-control">
                   <label className="label">
-                    <span className="label-text">Amount Token A</span>
+                    <span className="label-text text-base-content">Amount Token A</span>
                   </label>
                   <input
                     type="number"
                     placeholder="0.0"
-                    className="input input-bordered"
+                    className="input input-bordered bg-base-100 border-primary/30 text-base-content"
                     value={amountA}
                     onChange={e => setAmountA(e.target.value)}
                   />
@@ -381,12 +384,12 @@ const PoolPage: NextPage = () => {
                 {/* Amount B */}
                 <div className="form-control">
                   <label className="label">
-                    <span className="label-text">Amount Token B</span>
+                    <span className="label-text text-base-content">Amount Token B</span>
                   </label>
                   <input
                     type="number"
                     placeholder="0.0"
-                    className="input input-bordered"
+                    className="input input-bordered bg-base-100 border-primary/30 text-base-content"
                     value={amountB}
                     onChange={e => setAmountB(e.target.value)}
                   />
@@ -400,14 +403,14 @@ const PoolPage: NextPage = () => {
                 {/* Approve Buttons */}
                 <div className="flex gap-2">
                   <button
-                    className="btn btn-secondary flex-1"
+                    className="btn btn-secondary flex-1 bg-accent text-accent-content hover:bg-accent/90"
                     onClick={handleApproveTokenA}
                     disabled={!isTokenAValid || !amountA || isConfirming}
                   >
                     {isConfirming ? "Approving..." : "Approve Token A"}
                   </button>
                   <button
-                    className="btn btn-secondary flex-1"
+                    className="btn btn-secondary flex-1 bg-accent text-accent-content hover:bg-accent/90"
                     onClick={handleApproveTokenB}
                     disabled={!isTokenBValid || !amountB || isConfirming}
                   >
@@ -417,7 +420,7 @@ const PoolPage: NextPage = () => {
 
                 {/* Add Liquidity Button */}
                 <button
-                  className="btn btn-primary w-full"
+                  className="btn btn-primary w-full bg-primary text-primary-content hover:bg-primary/90"
                   onClick={handleAddLiquidity}
                   disabled={
                     !connectedAddress ||
@@ -437,12 +440,12 @@ const PoolPage: NextPage = () => {
                 {/* Remove Liquidity Form */}
                 <div className="form-control">
                   <label className="label">
-                    <span className="label-text">Token A Address</span>
+                    <span className="label-text text-base-content">Token A Address</span>
                   </label>
                   <input
                     type="text"
                     placeholder="0x..."
-                    className="input input-bordered"
+                    className="input input-bordered bg-base-100 border-primary/30 text-base-content"
                     value={tokenAAddress}
                     onChange={e => setTokenAAddress(e.target.value)}
                   />
@@ -450,12 +453,12 @@ const PoolPage: NextPage = () => {
 
                 <div className="form-control">
                   <label className="label">
-                    <span className="label-text">Token B Address</span>
+                    <span className="label-text text-base-content">Token B Address</span>
                   </label>
                   <input
                     type="text"
                     placeholder="0x..."
-                    className="input input-bordered"
+                    className="input input-bordered bg-base-100 border-primary/30 text-base-content"
                     value={tokenBAddress}
                     onChange={e => setTokenBAddress(e.target.value)}
                   />
@@ -463,12 +466,12 @@ const PoolPage: NextPage = () => {
 
                 <div className="form-control">
                   <label className="label">
-                    <span className="label-text">LP Token Amount to Remove</span>
+                    <span className="label-text text-base-content">LP Token Amount to Remove</span>
                   </label>
                   <input
                     type="number"
                     placeholder="0.0"
-                    className="input input-bordered"
+                    className="input input-bordered bg-base-100 border-primary/30 text-base-content"
                     value={liquidityAmount}
                     onChange={e => setLiquidityAmount(e.target.value)}
                   />
@@ -476,12 +479,12 @@ const PoolPage: NextPage = () => {
 
                 <div className="form-control">
                   <label className="label">
-                    <span className="label-text">Minimum Token A Amount</span>
+                    <span className="label-text text-base-content">Minimum Token A Amount</span>
                   </label>
                   <input
                     type="number"
                     placeholder="0.0"
-                    className="input input-bordered"
+                    className="input input-bordered bg-base-100 border-primary/30 text-base-content"
                     value={minAmountA}
                     onChange={e => setMinAmountA(e.target.value)}
                   />
@@ -489,19 +492,19 @@ const PoolPage: NextPage = () => {
 
                 <div className="form-control">
                   <label className="label">
-                    <span className="label-text">Minimum Token B Amount</span>
+                    <span className="label-text text-base-content">Minimum Token B Amount</span>
                   </label>
                   <input
                     type="number"
                     placeholder="0.0"
-                    className="input input-bordered"
+                    className="input input-bordered bg-base-100 border-primary/30 text-base-content"
                     value={minAmountB}
                     onChange={e => setMinAmountB(e.target.value)}
                   />
                 </div>
 
                 <button
-                  className="btn btn-primary w-full"
+                  className="btn btn-primary w-full bg-primary text-primary-content hover:bg-primary/90"
                   onClick={handleRemoveLiquidity}
                   disabled={
                     !connectedAddress ||
@@ -520,7 +523,7 @@ const PoolPage: NextPage = () => {
             )}
 
             <div className="mt-8">
-              <Link href="/" className="link">
+              <Link href="/" className="link text-primary hover:text-primary/80">
                 ← Back to home
               </Link>
             </div>
