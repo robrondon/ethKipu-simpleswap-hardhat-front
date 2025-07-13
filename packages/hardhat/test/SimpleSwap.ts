@@ -214,6 +214,24 @@ describe("SimpleSwap", () => {
           .addLiquidity(tokenA.target, tokenB.target, tinyAmount, tinyAmount, 0, 0, user2.address, deadline),
       ).to.be.revertedWith("SimpleSwap: Calculated liquidity is zero");
     });
+
+    it("Should handle the alternative branch in optimal liquidity calculation", async () => {
+      const { simpleSwap, tokenA, tokenB, user2, deadline } = await loadFixture(addLiquidityFixture);
+
+      // This should trigger the alternative branch where we calculate amountAOptimal
+      const tx = await simpleSwap.connect(user2).addLiquidity(
+        tokenA.target,
+        tokenB.target,
+        parseEther("200"), // Much higher than optimal
+        parseEther("100"), // Lower than optimal
+        0,
+        0,
+        user2.address,
+        deadline,
+      );
+
+      await expect(tx).to.emit(simpleSwap, "LiquidityAdded");
+    });
   });
 
   describe("removeLiquidity", () => {
