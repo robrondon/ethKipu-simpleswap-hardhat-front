@@ -21,6 +21,9 @@ describe("SimpleSwap", () => {
       const { simpleSwap } = await loadFixture(deployContractsFixture);
 
       expect(simpleSwap.target).to.not.equal(0);
+      expect(simpleSwap.target).to.not.equal("");
+      expect(simpleSwap.target).to.not.equal(null);
+      expect(simpleSwap.target).to.not.equal(undefined);
     });
   });
 });
