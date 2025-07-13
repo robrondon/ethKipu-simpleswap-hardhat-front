@@ -130,6 +130,22 @@ describe("SimpleSwap", () => {
           ),
       ).to.be.revertedWith("SimpleSwap: Expired deadline");
     });
+    it("Should fail with identical tokens", async () => {
+      const { simpleSwap, tokenA, user1, deadline } = await loadFixture(deployContractsFixture);
+
+      await expect(
+        simpleSwap.connect(user1).addLiquidity(
+          tokenA.target,
+          tokenA.target, // Same token
+          LIQUIDITY_AMOUNT_A,
+          LIQUIDITY_AMOUNT_B,
+          0,
+          0,
+          user1.address,
+          deadline,
+        ),
+      ).to.be.revertedWith("SimpleSwap: Identical tokens");
+    });
   });
 
   describe("removeLiquidity", () => {
