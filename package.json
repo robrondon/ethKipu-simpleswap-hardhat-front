@@ -15,6 +15,8 @@
     "chain": "yarn hardhat:chain",
     "compile": "yarn hardhat:compile",
     "deploy": "yarn hardhat:deploy",
+    "deploy:sepolia": "yarn hardhat:deploy --network sepolia",
+    "deploy:mainnet": "yarn hardhat:deploy --network mainnet",
     "fork": "yarn hardhat:fork",
     "format": "yarn next:format && yarn hardhat:format",
     "generate": "yarn account:generate",
