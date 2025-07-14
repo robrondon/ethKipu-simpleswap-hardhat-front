@@ -11,9 +11,30 @@ export type ScaffoldConfig = {
 
 export const DEFAULT_ALCHEMY_API_KEY = "oKxs-03sij-U_N0iOlrSsZFr29-IqbuF";
 
+// Helper function to determine target networks
+const getTargetNetworks = () => {
+  // Allow manual override via environment variable
+  if (process.env.NEXT_PUBLIC_TARGET_NETWORK) {
+    switch (process.env.NEXT_PUBLIC_TARGET_NETWORK.toLowerCase()) {
+      case "hardhat":
+        return [chains.hardhat];
+      case "sepolia":
+        return [chains.sepolia];
+      case "mainnet":
+        return [chains.mainnet];
+      default:
+        console.warn(`Unknown network: ${process.env.NEXT_PUBLIC_TARGET_NETWORK}`);
+    }
+  }
+
+  // Default: hardhat for development, sepolia for production
+  return process.env.NODE_ENV === "production" ? [chains.sepolia] : [chains.hardhat];
+};
+
 const scaffoldConfig = {
   // The networks on which your DApp is live
-  targetNetworks: [chains.sepolia],
+  // Use hardhat network for development, sepolia for production
+  targetNetworks: getTargetNetworks(),
 
   // The interval at which your front-end polls the RPC servers for new data
   // it has no effect if you only target the local network (default is 4000)
