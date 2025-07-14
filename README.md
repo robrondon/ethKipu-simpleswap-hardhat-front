@@ -1,80 +1,274 @@
-# 🏗 Scaffold-ETH 2
+# 🚀 SimpleSwap - Decentralized Exchange
 
 <h4 align="center">
-  <a href="https://docs.scaffoldeth.io">Documentation</a> |
-  <a href="https://scaffoldeth.io">Website</a>
+  A decentralized exchange (DEX) built with Scaffold-ETH 2
 </h4>
 
-🧪 An open-source, up-to-date toolkit for building decentralized applications (dapps) on the Ethereum blockchain. It's designed to make it easier for developers to create and deploy smart contracts and build user interfaces that interact with those contracts.
+<p align="center">
+  <strong>Trade tokens instantly. Provide liquidity to earn fees from trades.</strong>
+</p>
 
-⚙️ Built using NextJS, RainbowKit, Hardhat, Wagmi, Viem, and Typescript.
+## 📖 Overview
 
-- ✅ **Contract Hot Reload**: Your frontend auto-adapts to your smart contract as you edit it.
-- 🪝 **[Custom hooks](https://docs.scaffoldeth.io/hooks/)**: Collection of React hooks wrapper around [wagmi](https://wagmi.sh/) to simplify interactions with smart contracts with typescript autocompletion.
-- 🧱 [**Components**](https://docs.scaffoldeth.io/components/): Collection of common web3 components to quickly build your frontend.
-- 🔥 **Burner Wallet & Local Faucet**: Quickly test your application with a burner wallet and local faucet.
-- 🔐 **Integration with Wallet Providers**: Connect to different wallet providers and interact with the Ethereum network.
+SimpleSwap is a decentralized exchange that replicates core Uniswap functionality with a clean, modern interface. Built on Ethereum, it allows users to swap ERC-20 tokens and provide liquidity to earn trading fees.
 
-![Debug Contracts tab](https://github.com/scaffold-eth/scaffold-eth-2/assets/55535804/b237af0c-5027-4849-a5c1-2e31495cccb1)
+### ✨ Features
 
-## Requirements
+- 🔄 **Token Swapping**: Swap any ERC-20 token for another using automated market maker (AMM) pools
+- 💧 **Liquidity Provision**: Add and remove liquidity to earn trading fees
+- 📊 **Real-time Pricing**: Get live token prices and swap estimates
+- 🛡️ **Slippage Protection**: Set custom slippage tolerance to protect against price movements
+- 🔍 **Pool Information**: View detailed pool statistics including reserves and token balances
+- 🎨 **Modern UI**: Clean, responsive interface built with Next.js and Tailwind CSS
+- 🔗 **Wallet Integration**: Connect with any Web3 wallet (MetaMask, WalletConnect, etc.)
+- 🔧 **Direct Contract Interaction**: Access the Utility Contracts page to interact directly with smart contracts
+- 🪙 **Token Minting**: Mint ALE and ROB tokens for testing purposes
 
-Before you begin, you need to install the following tools:
+### 🏗️ Architecture
 
-- [Node (>= v20.18.3)](https://nodejs.org/en/download/)
-- Yarn ([v1](https://classic.yarnpkg.com/en/docs/install/) or [v2+](https://yarnpkg.com/getting-started/install))
-- [Git](https://git-scm.com/downloads)
+- **Smart Contracts**: Solidity contracts implementing AMM functionality with constant product formula (x \* y = k)
+- **Frontend**: Next.js 15 with TypeScript, Tailwind CSS, and DaisyUI
+- **Web3 Integration**: Wagmi + Viem for Ethereum interactions
+- **Development**: Hardhat for smart contract development and testing
 
-## Quickstart
+## 🚀 Quick Start
 
-To get started with Scaffold-ETH 2, follow the steps below:
+### Prerequisites
 
-1. Install dependencies if it was skipped in CLI:
+- [Node.js](https://nodejs.org/) (>= v20.18.3)
+- [Yarn](https://yarnpkg.com/) (v1 or v2+)
+- [Git](https://git-scm.com/)
+
+### Installation
+
+1. **Clone the repository**
+
+   ```bash
+   git clone <your-repo-url>
+   cd simpleswap-frontend
+   ```
+
+2. **Install dependencies**
+
+   ```bash
+   yarn install
+   ```
+
+3. **Start local Hardhat blockchain**
+
+   ```bash
+   yarn chain
+   ```
+
+4. **Deploy smart contracts** (in a new terminal)
+
+   ```bash
+   yarn deploy
+   ```
+
+5. **Start the frontend** (in a new terminal)
+
+   ```bash
+   yarn start
+   ```
+
+6. **Open your browser**
+   Navigate to [http://localhost:3000](http://localhost:3000)
+
+**Note**: The application is configured to use the local Hardhat network for development. This provides a fast, local blockchain environment for testing and development.
+
+## 📋 Smart Contracts
+
+### Core Contracts
+
+- **`SimpleSwap.sol`**: Main DEX contract implementing AMM functionality
+- **`LPToken.sol`**: ERC-20 token representing liquidity provider shares
+- **`ERC20Token.sol`**: Sample ERC-20 token for testing
+- **`ALE Token`**: Test token that can be minted for development
+- **`ROB Token`**: Test token that can be minted for development
+
+### Key Functions
+
+#### Swapping
+
+- `swapExactTokensForTokens()`: Swap exact input tokens for output tokens
+- `getAmountOut()`: Calculate output amount for a given input
+- `getPrice()`: Get current token price in a pool
+
+#### Liquidity
+
+- `addLiquidity()`: Add liquidity to a token pair
+- `removeLiquidity()`: Remove liquidity and receive underlying tokens
+- `_calculateOptimalAmounts()`: Calculate optimal token amounts for liquidity provision
+
+## 🎯 Usage Guide
+
+### Swapping Tokens
+
+1. **Connect your wallet** using the connect button
+2. **Enter token addresses** for the tokens you want to swap
+3. **Set the amount** you want to swap
+4. **Review the swap details** including:
+   - Estimated output amount
+   - Price impact
+   - Slippage tolerance
+5. **Approve tokens** if needed (first-time interaction)
+6. **Execute the swap**
+
+### Providing Liquidity
+
+1. **Navigate to the Liquidity page**
+2. **Enter token addresses** for the pair you want to provide liquidity to
+3. **Set amounts** for both tokens
+4. **Review pool information** including:
+   - Current reserves
+   - Your share of the pool
+   - Estimated LP tokens to receive
+5. **Approve both tokens** if needed
+6. **Add liquidity**
+
+### Removing Liquidity
+
+1. **Switch to the "Remove" tab** on the Liquidity page
+2. **Enter the amount of LP tokens** you want to burn
+3. **Set minimum amounts** for both tokens (slippage protection)
+4. **Review the removal details**
+5. **Remove liquidity**
+
+### Advanced Usage
+
+#### Direct Contract Interaction
+
+For advanced users or developers who want to interact directly with the smart contracts:
+
+1. **Navigate to the Utility Contracts page** (accessible from the main menu)
+2. **Select the contract** you want to interact with (SimpleSwap, ALE Token, or ROB Token)
+3. **Choose the function** you want to call
+4. **Fill in the parameters** and execute the transaction
+
+#### Token Minting
+
+To get test tokens for development and testing:
+
+1. **Go to the Utility Contracts page**
+2. **Select ALE Token or ROB Token** from the contract list
+3. **Find the `mint` function**
+4. **Enter the amount** you want to mint
+5. **Execute the mint transaction**
+
+This is particularly useful for:
+
+- Testing swap functionality
+- Creating liquidity pools
+- Development and debugging
+
+## 🧪 Testing
+
+Run the test suite to verify smart contract functionality:
+
+```bash
+yarn hardhat:test
+```
+
+## 🔧 Development
+
+### Project Structure
 
 ```
-cd my-dapp-example
-yarn install
+simpleswap-frontend/
+├── packages/
+│   ├── hardhat/          # Smart contracts and deployment
+│   │   ├── contracts/    # Solidity contracts
+│   │   ├── deploy/       # Deployment scripts
+│   │   └── test/         # Contract tests
+│   └── nextjs/           # Frontend application
+│       ├── app/          # Next.js app directory
+│       ├── components/   # React components
+│       └── hooks/        # Custom React hooks
 ```
 
-2. Run a local network in the first terminal:
+### Available Scripts
 
+- `yarn chain`: Start local Hardhat node
+- `yarn deploy`: Deploy contracts to local network
+- `yarn start`: Start Next.js development server
+- `yarn build`: Build for production
+- `yarn hardhat:test`: Run smart contract tests
+- `yarn lint`: Run ESLint
+- `yarn format`: Format code with Prettier
+
+### Configuration
+
+- **Network Configuration**: Edit `packages/hardhat/hardhat.config.ts`
+- **Frontend Configuration**: Edit `packages/nextjs/scaffold.config.ts`
+- **Contract Addresses**: Automatically generated in `packages/nextjs/contracts/deployedContracts.ts`
+
+## 🌐 Deployment
+
+### Local Development
+
+The project is configured for local development with Hardhat. All contracts deploy to the local network automatically.
+
+### Production Deployment (Sepolia)
+
+The application automatically switches to Sepolia testnet when deployed to production. Here's how to deploy:
+
+#### 1. **Set up Environment Variables**
+
+Create a `.env.local` file in the root directory:
+
+```bash
+# Alchemy API Key (get one at https://dashboard.alchemyapi.io)
+NEXT_PUBLIC_ALCHEMY_API_KEY=your_alchemy_api_key_here
+
+# WalletConnect Project ID (get one at https://cloud.walletconnect.com)
+NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID=your_walletconnect_project_id_here
+
+# Deployer private key (for contract deployment)
+DEPLOYER_PRIVATE_KEY=your_private_key_here
 ```
-yarn chain
+
+#### 2. **Deploy Smart Contracts to Sepolia**
+
+```bash
+# Deploy to Sepolia testnet
+yarn deploy --network sepolia
 ```
 
-This command starts a local Ethereum network using Hardhat. The network runs on your local machine and can be used for testing and development. You can customize the network configuration in `packages/hardhat/hardhat.config.ts`.
+#### 3. **Build and Deploy Frontend**
 
-3. On a second terminal, deploy the test contract:
+```bash
+# Build for production
+yarn build
 
-```
-yarn deploy
-```
-
-This command deploys a test smart contract to the local network. The contract is located in `packages/hardhat/contracts` and can be modified to suit your needs. The `yarn deploy` command uses the deploy script located in `packages/hardhat/deploy` to deploy the contract to the network. You can also customize the deploy script.
-
-4. On a third terminal, start your NextJS app:
-
-```
-yarn start
+# Deploy to your hosting platform (e.g., Vercel, Netlify)
 ```
 
-Visit your app on: `http://localhost:3000`. You can interact with your smart contract using the `Debug Contracts` page. You can tweak the app config in `packages/nextjs/scaffold.config.ts`.
+#### 4. **Environment Configuration for Hosting**
 
-Run smart contract test with `yarn hardhat:test`
+When deploying to platforms like Vercel, set these environment variables:
 
-- Edit your smart contracts in `packages/hardhat/contracts`
-- Edit your frontend homepage at `packages/nextjs/app/page.tsx`. For guidance on [routing](https://nextjs.org/docs/app/building-your-application/routing/defining-routes) and configuring [pages/layouts](https://nextjs.org/docs/app/building-your-application/routing/pages-and-layouts) checkout the Next.js documentation.
-- Edit your deployment scripts in `packages/hardhat/deploy`
+- `NEXT_PUBLIC_ALCHEMY_API_KEY`: Your Alchemy API key
+- `NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID`: Your WalletConnect project ID
+- `NODE_ENV`: Set to `production` (this automatically switches to Sepolia)
 
+### Network Configuration
 
-## Documentation
+The application automatically detects the environment:
 
-Visit our [docs](https://docs.scaffoldeth.io) to learn how to start building with Scaffold-ETH 2.
+- **Development**: Uses Hardhat network (localhost:8545)
+- **Production**: Uses Sepolia testnet
 
-To know more about its features, check out our [website](https://scaffoldeth.io).
+You can also manually override the network by setting `NEXT_PUBLIC_TARGET_NETWORK` environment variable.
 
-## Contributing to Scaffold-ETH 2
+## 📄 License
 
-We welcome contributions to Scaffold-ETH 2!
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-Please see [CONTRIBUTING.MD](https://github.com/scaffold-eth/scaffold-eth-2/blob/main/CONTRIBUTING.md) for more information and guidelines for contributing to Scaffold-ETH 2.
+## 🙏 Acknowledgments
+
+- Built with [Scaffold-ETH 2](https://github.com/scaffold-eth/scaffold-eth-2)
+- Inspired by [Uniswap](https://uniswap.org/)
+- Uses [OpenZeppelin](https://openzeppelin.com/) contracts for security
+
+**Happy swapping! 🚀**
