@@ -134,7 +134,7 @@ const SwapPage: NextPage = () => {
     args: connectedAddress ? [connectedAddress] : undefined,
   });
 
-  const { data: tokenAAllowanceData } = useReadContract({
+  const { data: tokenAAllowanceData, refetch: refetchAllowance } = useReadContract({
     address: isTokenAValid ? tokenAAddress : undefined,
     abi: ERC20_ABI,
     functionName: "allowance",
@@ -304,7 +304,8 @@ const SwapPage: NextPage = () => {
 
   // Verificar si necesita approval
   const needsApproval = () => {
-    if (!amountIn || !tokenAAllowanceData) return false;
+    if (!amountIn) return false;
+    if (tokenAAllowanceData === undefined || tokenAAllowanceData === null) return false;
     const amountInWei = parseEther(amountIn);
     return BigInt(tokenAAllowanceData) < amountInWei;
   };
@@ -347,6 +348,7 @@ const SwapPage: NextPage = () => {
   useEffect(() => {
     if (isSuccess) {
       notification.success("Approval completed successfully!");
+      refetchAllowance();
     }
   }, [isSuccess]);
 
