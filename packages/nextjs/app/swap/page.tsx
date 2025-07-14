@@ -350,7 +350,7 @@ const SwapPage: NextPage = () => {
       notification.success("Approval completed successfully!");
       refetchAllowance();
     }
-  }, [isSuccess]);
+  }, [isSuccess, refetchAllowance]);
 
   const poolInfo = getPoolInfo();
   const realPriceImpact = calculatePriceImpact(amountIn, estimatedAmountOut);
